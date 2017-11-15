@@ -61,7 +61,7 @@ const getDefaultConfig = ({
     context: root,
     entry: [],
     output: {
-      path: path.join(root, 'dist'),
+      path: path.join(root), // removed 'dist' from path
       filename: `index.${platform}.bundle`,
       publicPath: `http://localhost:${port}/`,
     },
@@ -212,27 +212,25 @@ const getDefaultConfig = ({
  */
 function makeReactNativeConfig(
   userWebpackConfig: WebpackConfigFactory,
-  options: ConfigOptions
+  options: ConfigOptions,
+  platform
 ): [Array<WebpackConfig>, typeof PLATFORMS] {
-  const configs = PLATFORMS.map(platform => {
-    const env = Object.assign({}, options, { platform });
-    const defaultWebpackConfig = getDefaultConfig(env);
-    const polyfillPath = require.resolve('./polyfillEnvironment.js');
+  const env = Object.assign({}, options, { platform });
+  const defaultWebpackConfig = getDefaultConfig(env);
 
-    const userConfig =
-      typeof userWebpackConfig === 'function'
-        ? userWebpackConfig(env, defaultWebpackConfig)
-        : userWebpackConfig;
+  const config = Object.assign(
+    {},
+    defaultWebpackConfig,
+    typeof userWebpackConfig === 'function'
+      ? userWebpackConfig(env, defaultWebpackConfig)
+      : userWebpackConfig
+  );
 
-    const config = Object.assign({}, defaultWebpackConfig, userConfig, {
-      entry: injectPolyfillIntoEntry(userConfig.entry, polyfillPath),
-      name: platform,
-    });
+  // For simplicity, we don't require users to extend
+  // default config.entry but do it for them.
+  config.entry = defaultWebpackConfig.entry.concat(config.entry);
 
-    return config;
-  });
-
-  return [configs, PLATFORMS];
+  return config;
 }
 
 /*
