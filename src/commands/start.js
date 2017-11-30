@@ -48,44 +48,15 @@ async function start(opts: *) {
     port: opts.port,
   };
 
-  /*
-  ** Add this to android build in middleware
-
-  // Run `adb reverse` on Android
-  if (opts.platform === 'android') {
-    const command = `adb reverse tcp:${opts.port} tcp:${opts.port}`;
-
-    try {
-      await exec(command);
-      logger.info(
-        messages.commandSuccess({
-          command,
-        })
-      );
-    } catch (error) {
-      logger.warn(
-        messages.commandFailed({
-          command,
-          error,
-        })
-      );
-    }
-  }
-  logger.info(
-    messages.initialStartInformation({
-      entries: Array.isArray(config) ? config.map(c => c.entry) : config.entry,
-      port: opts.port,
-      isMulti: Array.isArray(config),
-    })
-  );
-*/
-  logger.done(`Haul ready. Send requests to ${configOptions.port}`);
+  logger.done(`Haul ready at ${configOptions.port}`);
 
   createServer(
     {
-      configPath,
+      configPath, // where forker can find a config
       configOptions,
-    }, // passes path to config now
+    },
+
+    // I'll make use of those later - K.
     didHaveIssues => {
       clear();
       if (didHaveIssues) {
