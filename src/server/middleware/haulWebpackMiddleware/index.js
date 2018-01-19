@@ -11,7 +11,7 @@ const xpipe = require('xpipe');
 
 const createFork = require('./utils/createFork');
 const getFileFromPath = require('./utils/getFileFromPath');
-const { parentEv, forkEv } = require('./utils/eventNames');
+const EVENTS = require('./utils/eventNames');
 const RequestQueue = require('./utils/requestQueue');
 const runAdbReverse = require('./utils/runAdbReverse');
 
@@ -128,16 +128,16 @@ const receiveMessage = (data, req, res, next) => {
   const owner = FORKS[platform];
 
   switch (event) {
-    case parentEv.buildFinished: {
+    case EVENTS.buildFinished: {
       owner.listeners.getSpecific(ID); // remove item
       break;
     }
-    case parentEv.buildFailed: {
+    case EVENTS.buildFailed: {
       const response = owner.listeners.getSpecific(ID);
       response.end('BUNDLE FAILED');
       break;
     }
-    case parentEv.errorMessaging: {
+    case EVENTS.errorMessaging: {
       closeAllConnections();
       throw new Error(`BAD COMMUNICATIONS: ${payload}`);
     }
@@ -187,7 +187,7 @@ module.exports = function haulMiddlewareFactory(options: MiddlewareOptions) {
 
     // request bundle
     FORKS[platform].listeners.addItem(res);
-    sendMessage(platform, res, forkEv.requestBuild);
+    sendMessage(platform, res, EVENTS.requestBuild);
   };
 };
 

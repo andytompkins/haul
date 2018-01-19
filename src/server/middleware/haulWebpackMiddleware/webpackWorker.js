@@ -31,10 +31,7 @@ const workerShared = require(path.resolve(
   './utils/workerShared'
 ));
 
-const { parentEv, forkEv } = require(path.resolve(
-  HAUL_DIRECTORY,
-  './utils/eventNames'
-));
+const EVENTS = require(path.resolve(HAUL_DIRECTORY, './utils/eventNames'));
 /**
  * Get Webpack config
  */
@@ -45,7 +42,7 @@ const config = getConfig(configPath, configOptions, HAUL_PLATFORM);
 
 /**
  * Context is a communication way between webpack lifecycles and 
- * worker-parent communication
+ * worker-parent channel
  */
 const context = {
   webpackState: undefined,
@@ -56,7 +53,7 @@ const context = {
   callbacks: [],
   compiler: null,
   onError: error => {
-    sendMessage(-1, parentEv.buildFailed, error);
+    sendMessage(-1, EVENTS.buildFailed, error);
   },
 };
 
@@ -77,7 +74,7 @@ const sharedContext = workerShared(context);
 const notifyParentMessageError = () => {
   sendMessage(
     -1,
-    forkEv.errorMessaging,
+    EVENTS.errorMessaging,
     `From fork ${HAUL_PLATFORM}: No ID or event received. | sendMessage`
   );
 };
@@ -90,7 +87,7 @@ const receiveMessage = data => {
   const taskID = data.ID;
 
   switch (data.event) {
-    case forkEv.requestBuild: {
+    case EVENTS.requestBuild: {
       sharedContext.handleRequest(HAUL_FILEOUTPUT, () =>
         processRequest(taskID)
       );
@@ -108,7 +105,7 @@ const sendMessage = (ID, event, payload) => {
   }
 
   // Pipe the bundle to the parent
-  if (event === parentEv.buildFinished) {
+  if (event === EVENTS.buildFinished) {
     const fileReadStream = context.fs.createReadStream(payload);
     const conn = net.createConnection(HAUL_SOCKET);
     conn.setEncoding('utf-8');
@@ -130,7 +127,7 @@ const sendMessage = (ID, event, payload) => {
  */
 const processRequest = ID => {
   const filePath = path.join(process.cwd(), HAUL_FILEOUTPUT);
-  sendMessage(ID, parentEv.buildFinished, filePath);
+  sendMessage(ID, EVENTS.buildFinished, filePath);
 };
 
 process.on('message', receiveMessage);
