@@ -4,18 +4,10 @@
  *
  * @flow
  */
-import type { WebpackStats } from '../types';
 
 const express = require('express');
 const http = require('http');
 const path = require('path');
-
-type InvalidCallback = (compilingAfterError: boolean) => void;
-type CompileCallback = (stats: WebpackStats) => void;
-
-/**
- * Event system
- */
 
 /**
  * Custom made middlewares
@@ -45,14 +37,7 @@ const WebSocketDebuggerProxy = require('./util/WebsocketDebuggerProxy');
 /**
  * Packager-like Server running on top of Webpack
  */
-function createServer(
-  config: {
-    configPath: string,
-    configOptions: Object,
-  },
-  onInvalid: InvalidCallback,
-  onCompile: CompileCallback
-) {
+function createServer(config: { configPath: string, configOptions: Object }) {
   const appHandler = express();
   // const webpackMiddleware = webpackDevMiddleware(compiler, {
   //   lazy: false,
@@ -74,10 +59,15 @@ function createServer(
   //     poll: 1000,
   //   },
   // });
+
+  const expressContext = {
+    liveReload: () => {},
+  };
   const { configPath, configOptions } = config;
   const webpackMiddleware = haulWebpackMiddleware({
     configPath,
     configOptions,
+    expressContext,
   });
 
   const httpServer = http.createServer(appHandler);
@@ -98,7 +88,7 @@ function createServer(
     .use(express.static(path.join(__dirname, '/assets/public')))
     .use(rawBodyMiddleware)
     .use(devToolsMiddleware(debuggerProxy))
-    .use(liveReloadMiddleware()) // disable for now
+    .use(liveReloadMiddleware(expressContext))
     .use(statusPageMiddleware)
     // .use(symbolicateMiddleware(compiler)) // disable for now
     .use(openInEditorMiddleware())
@@ -107,25 +97,6 @@ function createServer(
     .use(requestChangeMiddleware)
     .use(webpackMiddleware)
     .use(missingBundleMiddleware);
-
-  // subscribe to global event
-  // Handle callbacks
-  // let didHaveIssues = false;
-  // compiler.plugin('done', (stats: WebpackStats) => {
-  //   const hasIssues = stats.hasErrors() || stats.hasWarnings();
-
-  //   if (hasIssues) {
-  //     didHaveIssues = true;
-  //   } else {
-  //     didHaveIssues = false;
-  //   }
-
-  //   onCompile(stats);
-  // });
-
-  // compiler.plugin('invalid', () => {
-  //   onInvalid(didHaveIssues);
-  // });
 
   return httpServer;
 }

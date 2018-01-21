@@ -27,6 +27,7 @@ type ConfigOptionsType = {
 type MiddlewareOptions = {
   configPath: string,
   configOptions: ConfigOptionsType,
+  expressContext: { liveReload: () => void },
 };
 
 /**
@@ -116,11 +117,12 @@ const sendMessage = (platform: string, res, event: string) => {
 /**
  * Handles received messages from fork
  * @param {Object} data {ID, event, payload}
+ * @param {Object} expressContext {liveReload} attached methods from other middlewares
  * @param {*} req express 'req'
  * @param {*} res express 'res'
  * @param {*} next express 'next'
  */
-const receiveMessage = (data, req, res, next) => {
+const receiveMessage = (data, expressContext, req, res, next) => {
   const { platform, ID, event, payload } = data;
 
   if (ID === undefined || !platform || !event) {
@@ -150,6 +152,13 @@ const receiveMessage = (data, req, res, next) => {
       throw new Error(`BAD COMMUNICATIONS: ${payload}`);
     }
 
+    case EVENTS.liveReload: {
+      // all request has been flushed, do nothing
+      const { liveReload } = expressContext;
+      liveReload();
+      break;
+    }
+
     default: {
       logger.warn('Uhandled Event:\n', event);
       next();
@@ -159,6 +168,7 @@ const receiveMessage = (data, req, res, next) => {
 
 module.exports = function haulMiddlewareFactory(options: MiddlewareOptions) {
   return function webpackHaulMiddleware(req, res, next) {
+    const { expressContext } = options;
     const { platform } = req.query;
     const fileName = getFileFromPath(req.path);
 
@@ -180,7 +190,7 @@ module.exports = function haulMiddlewareFactory(options: MiddlewareOptions) {
 
       platformSpecifics.listeners = new RequestQueue();
       platformSpecifics.fork.on('message', data =>
-        receiveMessage(data, req, res, next)
+        receiveMessage(data, expressContext, req, res, next)
       );
 
       platformSpecifics.server = createSocketServer(platform).listen(socket);

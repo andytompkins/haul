@@ -1,12 +1,15 @@
 /* eslint-disable no-param-reassign, no-debugger, no-empty */
 
 const path = require('path');
+const clear = require('clear');
 
 module.exports = function Shared(context) {
   const shared = {
     compilerDone(stats) {
       context.state = true;
       context.webpackStats = stats;
+
+      clear();
 
       process.nextTick(() => {
         if (!context.state) return;
@@ -15,6 +18,7 @@ module.exports = function Shared(context) {
         cbs.forEach(cb => {
           cb(stats);
         });
+        context.runLiveReload();
       });
     },
 

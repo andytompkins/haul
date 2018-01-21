@@ -6,50 +6,48 @@
 /**
  * Live reload middleware
  */
-function liveReloadMiddleware() {
-  // let watchers = [];
-  // const headers = {
-  //   'Content-Type': 'application/json; charset=UTF-8',
-  // };
+function liveReloadMiddleware(expressContext) {
+  let watchers = [];
+  const headers = {
+    'Content-Type': 'application/json; charset=UTF-8',
+  };
 
-  // function notifyAllWatchers() {
-  //   watchers.forEach(watcher => {
-  //     watcher.res.writeHead(205, headers);
-  //     watcher.res.end(JSON.stringify({ changed: true }));
-  //   });
+  function notifyAllWatchers() {
+    watchers.forEach(watcher => {
+      watcher.res.writeHead(205, headers);
+      watcher.res.end(JSON.stringify({ changed: true }));
+    });
 
-  //   watchers = [];
-  // }
+    watchers = [];
+  }
+
+  // pass live reload to forks' parent
+  /* eslint-disable no-param-reassign */
+  expressContext.liveReload = notifyAllWatchers;
 
   return (req, res, next) => {
     /**
      * React Native client opens connection at `/onchange`
      * and awaits reload signal (http status code - 205)
      */
+
     if (req.path === '/onchange') {
-      return res.end(); // Remove once done dev.
-      // const watcher = { req, res };
+      const watcher = { req, res };
 
-      // watchers.push(watcher);
+      watchers.push(watcher);
 
-      // req.on('close', () => {
-      //   watchers.splice(watchers.indexOf(watcher), 1);
-      // });
+      req.on('close', () => {
+        watchers.splice(watchers.indexOf(watcher), 1);
+      });
+
+      return;
     }
 
     if (req.path === '/reloadapp') {
-      return res.end(); // Remove once done dev.
-      // notifyAllWatchers();
-      // res.end();
+      notifyAllWatchers();
+      res.end();
+      return;
     }
-
-    /**
-     * On new `build`, notify all registered watchers to reload
-     */
-    // disable for now
-    // compiler.plugin('done', () => {
-    //   notifyAllWatchers();
-    // });
 
     next();
   };

@@ -50,6 +50,9 @@ const context = {
   platform: HAUL_PLATFORM,
   webpackStats: null,
   callbacks: [],
+  runLiveReload: () => {
+    sendMessage(-1, EVENTS.liveReload);
+  },
   compiler: null,
   onError: error => {
     // temp error handling

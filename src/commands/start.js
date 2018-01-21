@@ -11,7 +11,6 @@ const inquirer = require('inquirer');
 
 const logger = require('../logger');
 const createServer = require('../server');
-const messages = require('../messages');
 const getWebpackConfig = require('../utils/getWebpackConfig');
 const { isPortTaken, killProcess } = require('../utils/haulPortHandler');
 
@@ -48,41 +47,13 @@ async function start(opts: *) {
     port: opts.port,
   };
 
+  clear();
   logger.done(`Haul ready at ${configOptions.port}`);
 
-  createServer(
-    {
-      configPath, // where forker can find a config
-      configOptions,
-    },
-
-    // I'll make use of those later - K.
-    didHaveIssues => {
-      clear();
-      if (didHaveIssues) {
-        logger.warn(messages.bundleBuilding(didHaveIssues));
-      } else {
-        logger.info(messages.bundleBuilding(didHaveIssues));
-      }
-    },
-    stats => {
-      clear();
-      if (stats.hasErrors()) {
-        logger.error(
-          messages.bundleFailed({
-            errors: stats.toJson({ errorDetails: true }).errors,
-          })
-        );
-      } else {
-        logger.done(
-          messages.bundleBuilt({
-            stats,
-            platform: opts.platform,
-          })
-        );
-      }
-    }
-  ).listen(opts.port);
+  createServer({
+    configPath,
+    configOptions,
+  }).listen(opts.port);
 }
 
 module.exports = ({
