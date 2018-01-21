@@ -14,6 +14,7 @@ const getFileFromPath = require('./utils/getFileFromPath');
 const EVENTS = require('./utils/eventNames');
 const RequestQueue = require('./utils/requestQueue');
 const runAdbReverse = require('./utils/runAdbReverse');
+const logger = require('../../../logger');
 
 type ConfigOptionsType = {
   root: string,
@@ -40,7 +41,9 @@ const getSocket = (plat: string) =>
  * @param {string} err Error message to display/throw
  */
 const closeAllConnections = (err: typeof Error | string) => {
-  err && console.log('Exiting with error:', err);
+  logger.info('Shutting down Haul.');
+
+  err && logger.error(err.message);
 
   Object.keys(FORKS).forEach(plat => {
     FORKS[plat].fork.kill();
@@ -129,12 +132,17 @@ const receiveMessage = (data, req, res, next) => {
 
   switch (event) {
     case EVENTS.buildFinished: {
-      owner.listeners.getSpecific(ID); // remove item
+      // all request has been flushed, do nothing
       break;
     }
     case EVENTS.buildFailed: {
+      // todo: .error and .warnings coming
+      // should handle warnings?
       const response = owner.listeners.getSpecific(ID);
-      response.end('BUNDLE FAILED');
+      logger.error(`${platform}:\n`, payload.error);
+      response.type('text/javascript');
+      response.status(500);
+      response.end(`${payload.error}`);
       break;
     }
     case EVENTS.errorMessaging: {
@@ -143,7 +151,7 @@ const receiveMessage = (data, req, res, next) => {
     }
 
     default: {
-      console.log('Uhandled Event', event);
+      logger.warn('Uhandled Event:\n', event);
       next();
     }
   }
@@ -186,7 +194,6 @@ module.exports = function haulMiddlewareFactory(options: MiddlewareOptions) {
     }
 
     // request bundle
-    FORKS[platform].listeners.addItem(res);
     sendMessage(platform, res, EVENTS.requestBuild);
   };
 };

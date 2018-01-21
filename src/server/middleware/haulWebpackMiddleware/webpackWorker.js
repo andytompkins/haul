@@ -45,15 +45,15 @@ const config = getConfig(configPath, configOptions, HAUL_PLATFORM);
  * worker-parent channel
  */
 const context = {
-  webpackState: undefined,
   fs: new MemoryFileSystem(),
   state: false,
-  watching: undefined,
-  forceRebuild: false,
+  platform: HAUL_PLATFORM,
+  webpackStats: null,
   callbacks: [],
   compiler: null,
   onError: error => {
-    sendMessage(-1, EVENTS.buildFailed, error);
+    // temp error handling
+    console.log(`\nPlatform ${HAUL_PLATFORM} error\n${error.toString()}`);
   },
 };
 
@@ -88,9 +88,13 @@ const receiveMessage = data => {
 
   switch (data.event) {
     case EVENTS.requestBuild: {
-      sharedContext.handleRequest(HAUL_FILEOUTPUT, () =>
-        processRequest(taskID)
-      );
+      sharedContext.handleRequest(HAUL_FILEOUTPUT, stats => {
+        if (stats.hasErrors() || stats.hasWarnings()) {
+          processBuildFailed(taskID, stats.compilation);
+          return;
+        }
+        processBuildComplete(taskID);
+      });
       break;
     }
     default:
@@ -122,12 +126,23 @@ const sendMessage = (ID, event, payload) => {
 
 /**
  * Callback to `compiler.ready`, when webpack finishes bundle
- * Todo: need to change its behaviour based on errors in compiling
  * @param {number} ID 
  */
-const processRequest = ID => {
+const processBuildComplete = ID => {
   const filePath = path.join(process.cwd(), HAUL_FILEOUTPUT);
   sendMessage(ID, EVENTS.buildFinished, filePath);
+};
+
+const processBuildFailed = (ID, compilation) => {
+  const errors = compilation.errors;
+  const warnings = compilation.warnings;
+
+  const message = {
+    error: errors.toString(),
+    warnings: warnings.toString(),
+  };
+
+  sendMessage(ID, EVENTS.buildFailed, message);
 };
 
 process.on('message', receiveMessage);

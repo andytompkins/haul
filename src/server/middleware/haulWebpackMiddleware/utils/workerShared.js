@@ -8,17 +8,14 @@ module.exports = function Shared(context) {
       context.state = true;
       context.webpackStats = stats;
 
-      if (!context.state) return;
-      const cbs = context.callbacks;
-      context.callbacks = [];
-      cbs.forEach(cb => {
-        cb(stats);
+      process.nextTick(() => {
+        if (!context.state) return;
+        const cbs = context.callbacks;
+        context.callbacks = [];
+        cbs.forEach(cb => {
+          cb(stats);
+        });
       });
-
-      if (context.forceRebuild) {
-        context.forceRebuild = false;
-        shared.rebuild();
-      }
     },
 
     compilerInvalid(...args) {
@@ -30,26 +27,9 @@ module.exports = function Shared(context) {
       }
     },
 
-    ready(fn) {
-      if (context.state) {
-        return fn(context.webpackStats);
-      }
-
-      return context.callbacks.push(fn);
-    },
-
     startWatch() {
       const { compiler } = context;
-      context.watching = compiler.watch({}, shared.handleCompilerCb);
-    },
-
-    rebuild() {
-      if (context.state) {
-        context.state = false;
-        context.compiler.run(context.handleCompilerCb);
-      } else {
-        context.forceRebuild = true;
-      }
+      compiler.watch({}, shared.handleCompilerCb);
     },
 
     handleCompilerCb(err) {
@@ -58,39 +38,15 @@ module.exports = function Shared(context) {
       }
     },
 
-    waitUntilValid(cb = () => {}) {
-      if (context.watching) {
-        shared.ready(cb);
-        context.watching.invalidate();
-      }
-    },
-
-    invalidate(cb = () => {}) {
-      if (context.watching) {
-        shared.ready(cb);
-        context.watching.invalidate();
-      } else {
-        cb();
-      }
-    },
-
-    close(cb = () => {}) {
-      if (context.watching) {
-        context.watching.close(cb);
-      } else {
-        cb();
-      }
-    },
-
     handleRequest(filename, requestProcess) {
-      const pathToFile = path.join(process.cwd(), filename);
-      try {
+      if (context.state) {
+        const pathToFile = path.join(process.cwd(), filename);
         if (context.fs.statSync(pathToFile).isFile()) {
-          // requestProcess();
+          return requestProcess(context.webpackStats);
         }
-      } catch (e) {}
+      }
 
-      shared.ready(requestProcess);
+      return context.callbacks.push(requestProcess);
     },
   };
 

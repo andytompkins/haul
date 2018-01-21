@@ -15,8 +15,6 @@ const HasteResolver = require('../resolvers/HasteResolver');
 const moduleResolve = require('../utils/resolveModule');
 const getBabelConfig = require('./getBabelConfig');
 
-const PLATFORMS = ['ios', 'android'];
-
 type ConfigOptions = {
   root: string,
   dev: boolean,
@@ -214,7 +212,7 @@ function makeReactNativeConfig(
   userWebpackConfig: WebpackConfigFactory,
   options: ConfigOptions,
   platform
-): [Array<WebpackConfig>, typeof PLATFORMS] {
+) {
   const env = Object.assign({}, options, { platform });
   const defaultWebpackConfig = getDefaultConfig(env);
 
