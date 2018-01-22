@@ -5,7 +5,9 @@
  * @flow
  */
 
-const makeReactNativeConfig = require('../../../../utils/makeReactNativeConfig');
+const {
+  makeReactNativeConfig,
+} = require('../../../../utils/makeReactNativeConfig');
 
 module.exports = (configPath, configOptions, platform) => {
   const config = makeReactNativeConfig(

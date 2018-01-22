@@ -215,18 +215,17 @@ function makeReactNativeConfig(
 ) {
   const env = Object.assign({}, options, { platform });
   const defaultWebpackConfig = getDefaultConfig(env);
+  const polyfillPath = require.resolve('./polyfillEnvironment.js');
 
-  const config = Object.assign(
-    {},
-    defaultWebpackConfig,
+  const userConfig =
     typeof userWebpackConfig === 'function'
       ? userWebpackConfig(env, defaultWebpackConfig)
-      : userWebpackConfig
-  );
+      : userWebpackConfig;
 
-  // For simplicity, we don't require users to extend
-  // default config.entry but do it for them.
-  config.entry = defaultWebpackConfig.entry.concat(config.entry);
+  const config = Object.assign({}, defaultWebpackConfig, userConfig, {
+    entry: injectPolyfillIntoEntry(userConfig.entry, polyfillPath),
+    name: platform,
+  });
 
   return config;
 }

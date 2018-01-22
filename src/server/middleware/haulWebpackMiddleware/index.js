@@ -10,7 +10,7 @@ const net = require('net');
 const xpipe = require('xpipe');
 
 const createFork = require('./utils/createFork');
-const getFileFromPath = require('./utils/getFileFromPath');
+const getRequestDataFromPath = require('./utils/getRequestDataFromPath');
 const EVENTS = require('./utils/eventNames');
 const RequestQueue = require('./utils/requestQueue');
 const runAdbReverse = require('./utils/runAdbReverse');
@@ -169,10 +169,9 @@ const receiveMessage = (data, expressContext, req, res, next) => {
 module.exports = function haulMiddlewareFactory(options: MiddlewareOptions) {
   return function webpackHaulMiddleware(req, res, next) {
     const { expressContext } = options;
-    const { platform } = req.query;
-    const fileName = getFileFromPath(req.path);
+    const { filename, platform } = getRequestDataFromPath(req.path);
 
-    if (!platform || !fileName) return next();
+    if (!platform || !filename) return next();
     const socket = getSocket(platform);
 
     // Fork creation
