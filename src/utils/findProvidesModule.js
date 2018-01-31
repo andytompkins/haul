@@ -7,6 +7,15 @@
 const fs = require('fs');
 const path = require('path');
 
+const directory = process.cwd();
+
+let extraPlatforms = [];
+const rnCliConfigPath = path.resolve(directory, 'rn-cli.config.js');
+if (fs.existsSync(rnCliConfigPath)) {
+  const rnCliConfig = require(rnCliConfigPath); 
+  extraPlatforms = rnCliConfig.getPlatforms();
+}
+
 const defaultOpts = {
   // An array of folders to ignore when building map of modules
   // within given directory
@@ -20,7 +29,7 @@ const defaultOpts = {
   ],
   // An array of platform extensions to look for when locating
   // modules
-  platforms: ['ios', 'android', 'native', 'web'],
+  platforms: ['ios', 'android', 'native', 'web', ...extraPlatforms],
 };
 
 /**
@@ -82,12 +91,13 @@ function findProvidesModule(directories, opts = {}) {
         return;
       }
 
-      // Throw when duplicated modules are provided from a different
-      // fileName
+      // take the first occurrence of `module`?
       if (modulesMap[moduleName] && modulesMap[moduleName] !== fileName) {
-        throw new Error('Duplicate haste module found');
+        // throw new Error('Duplicate haste module found');
+        // log this?
+      } else {
+        modulesMap[moduleName] = fileName;
       }
-      modulesMap[moduleName] = fileName;
     }
   };
 

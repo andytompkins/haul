@@ -29,12 +29,20 @@ module.exports = ({
   assetsPath?: string,
   bundlePath?: string,
 }) => {
-  const warnings = stats.toJson({ warnings: true }).warnings;
-  const heading = stats.hasWarnings()
-    ? chalk.yellow(
-        `Built with warnings in ${(getBuildTime(stats) / 1000).toFixed(2)}s!`
-      )
-    : `Built successfully in ${(getBuildTime(stats) / 1000).toFixed(2)}s!`;
+  const buildStats = stats.toJson({ timing: true });
+  let heading = '';
+  if (buildStats.time) {
+    heading = buildStats.hasWarnings()
+      ? chalk.yellow('Built with warnings')
+      : `Built successfully in ${(buildStats.time / 1000).toFixed(2)}s!`;
+  } else {
+    heading += '\n';
+    for (let i = 0; i < buildStats.children.length; i++) {
+      heading += buildStats.children[i].warnings.length > 0
+        ? chalk.yellow('Built with warnings\n')
+        : `Built successfully in ${(buildStats.children[i].time / 1000).toFixed(2)}s!\n`;
+    }
+  }
 
   if (assetsPath && bundlePath) {
     return dedent`

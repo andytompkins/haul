@@ -7,6 +7,8 @@
 import type { Command } from '../types';
 
 const webpack = require('webpack');
+const path = require('path');
+const fs = require('fs');
 const clear = require('clear');
 const inquirer = require('inquirer');
 
@@ -18,6 +20,20 @@ const getWebpackConfig = require('../utils/getWebpackConfig');
 const { isPortTaken, killProcess } = require('../utils/haulPortHandler');
 
 const { makeReactNativeConfig } = require('../utils/makeReactNativeConfig');
+
+const directory = process.cwd();
+
+let extraPlatforms = [];
+const rnCliConfigPath = path.resolve(directory, 'rn-cli.config.js');
+if (fs.existsSync(rnCliConfigPath)) {
+  const rnCliConfig = require(rnCliConfigPath);
+  extraPlatforms = rnCliConfig.getPlatforms().map((plat) => {
+    return {
+      value: plat,
+      description: `Serves ${plat} bundle`
+    };
+  });
+}
 
 /**
  * Starts development server
@@ -179,9 +195,10 @@ module.exports = ({
           value: 'android',
           description: 'Serves Android bundle',
         },
+        ...extraPlatforms,
         {
           value: 'all',
-          description: 'Serves both platforms',
+          description: 'Serves all platforms',
         },
       ],
     },

@@ -8,6 +8,7 @@
 
 const webpack = require('webpack');
 const path = require('path');
+const fs = require('fs');
 const CaseSensitivePathsPlugin = require('case-sensitive-paths-webpack-plugin');
 const haulProgressBar = require('./haulProgressBar');
 const AssetResolver = require('../resolvers/AssetResolver');
@@ -15,7 +16,18 @@ const HasteResolver = require('../resolvers/HasteResolver');
 const moduleResolve = require('../utils/resolveModule');
 const getBabelConfig = require('./getBabelConfig');
 
-const PLATFORMS = ['ios', 'android'];
+const directory = process.cwd();
+
+let extraPlatforms = [];
+let extraProvidesModuleNodeModules = [];
+const rnCliConfigPath = path.resolve(directory, 'rn-cli.config.js');
+if (fs.existsSync(rnCliConfigPath)) {
+  const rnCliConfig = require(rnCliConfigPath); 
+  extraPlatforms = rnCliConfig.getPlatforms();
+  extraProvidesModuleNodeModules = rnCliConfig.getProvidesModuleNodeModules().reverse();
+}
+
+const PLATFORMS = ['ios', 'android', ...extraPlatforms];
 
 type ConfigOptions = {
   root: string,
@@ -193,7 +205,15 @@ const getDefaultConfig = ({
          * We don't support it, but need to provide a compatibility layer
          */
         new HasteResolver({
-          directories: [moduleResolve(root, 'react-native')],
+          directories: extraPlatforms.includes(platform)
+          ?
+            [...extraProvidesModuleNodeModules, 'react-native'].map((provider) => {
+              return moduleResolve(root, provider);
+            })
+          :
+            [
+              moduleResolve(root, 'react-native'),
+            ]
         }),
         /**
          * This is required by asset loader to resolve extra scales

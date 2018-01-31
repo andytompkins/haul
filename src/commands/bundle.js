@@ -7,6 +7,7 @@
 import type { Command } from '../types';
 
 const path = require('path');
+const fs = require('fs');
 const webpack = require('webpack');
 const clear = require('clear');
 
@@ -16,11 +17,24 @@ const { makeReactNativeConfig } = require('../utils/makeReactNativeConfig');
 const getWebpackConfig = require('../utils/getWebpackConfig');
 const logger = require('../logger');
 
+const directory = process.cwd();
+
+let extraPlatforms = [];
+const rnCliConfigPath = path.resolve(directory, 'rn-cli.config.js');
+if (fs.existsSync(rnCliConfigPath)) {
+  const rnCliConfig = require(rnCliConfigPath);
+  extraPlatforms = rnCliConfig.getPlatforms().map((plat) => {
+    return {
+      value: plat,
+      description: `Builds ${plat} bundle`
+    };
+  });
+}
+
 /**
  * Bundles your application code
  */
 async function bundle(opts: *) {
-  const directory = process.cwd();
   const configPath = getWebpackConfig(directory, opts.config);
 
   const [
@@ -143,6 +157,7 @@ module.exports = ({
           value: 'android',
           description: 'Builds Android bundle',
         },
+        ...extraPlatforms,
       ],
       example: 'haul bundle --platform ios',
     },
