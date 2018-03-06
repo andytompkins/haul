@@ -22,9 +22,11 @@ let extraPlatforms = [];
 let extraProvidesModuleNodeModules = [];
 const rnCliConfigPath = path.resolve(directory, 'rn-cli.config.js');
 if (fs.existsSync(rnCliConfigPath)) {
-  const rnCliConfig = require(rnCliConfigPath); 
+  const rnCliConfig = require(rnCliConfigPath);
   extraPlatforms = rnCliConfig.getPlatforms();
-  extraProvidesModuleNodeModules = rnCliConfig.getProvidesModuleNodeModules().reverse();
+  extraProvidesModuleNodeModules = rnCliConfig
+    .getProvidesModuleNodeModules()
+    .reverse();
 }
 
 const PLATFORMS = ['ios', 'android', ...extraPlatforms];
@@ -143,9 +145,10 @@ const getDefaultConfig = ({
         dev
           ? [
               new webpack.HotModuleReplacementPlugin(),
-              new webpack.EvalSourceMapDevToolPlugin({
-                module: true,
-              }),
+              // TODO: remove EvalSourceMapDevToolPlugin to prevent CSP errors
+              // new webpack.EvalSourceMapDevToolPlugin({
+              //   module: true,
+              // }),
               new webpack.NamedModulesPlugin(),
             ]
           : [
@@ -167,8 +170,8 @@ const getDefaultConfig = ({
               new webpack.optimize.UglifyJsPlugin({
                 /**
                  * By default, uglify only minifies *.js files
-                 * We need to use the plugin to configure *.bundle (Android, iOS - development) 
-                 * and *.jsbundle (iOS - production) to get minified. 
+                 * We need to use the plugin to configure *.bundle (Android, iOS - development)
+                 * and *.jsbundle (iOS - production) to get minified.
                  * Also disable IE8 support as we don't need it.
                  */
                 test: /\.(js|(js)?bundle)($|\?)/i,
@@ -206,14 +209,12 @@ const getDefaultConfig = ({
          */
         new HasteResolver({
           directories: extraPlatforms.includes(platform)
-          ?
-            [...extraProvidesModuleNodeModules, 'react-native'].map((provider) => {
-              return moduleResolve(root, provider);
-            })
-          :
-            [
-              moduleResolve(root, 'react-native'),
-            ]
+            ? [...extraProvidesModuleNodeModules, 'react-native'].map(
+                provider => {
+                  return moduleResolve(root, provider);
+                }
+              )
+            : [moduleResolve(root, 'react-native')],
         }),
         /**
          * This is required by asset loader to resolve extra scales

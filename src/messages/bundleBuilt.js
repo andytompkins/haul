@@ -29,20 +29,9 @@ module.exports = ({
   assetsPath?: string,
   bundlePath?: string,
 }) => {
-  const buildStats = stats.toJson({ timing: true });
-  let heading = '';
-  if (buildStats.time) {
-    heading = buildStats.hasWarnings()
-      ? chalk.yellow('Built with warnings')
-      : `Built successfully in ${(buildStats.time / 1000).toFixed(2)}s!`;
-  } else {
-    heading += '\n';
-    for (let i = 0; i < buildStats.children.length; i++) {
-      heading += buildStats.children[i].warnings.length > 0
-        ? chalk.yellow('Built with warnings\n')
-        : `Built successfully in ${(buildStats.children[i].time / 1000).toFixed(2)}s!\n`;
-    }
-  }
+  const heading = stats.hasWarnings()
+    ? chalk.yellow('Built with warnings')
+    : `Built successfully in ${(getBuildTime(stats) / 1000).toFixed(2)}s!`;
 
   if (assetsPath && bundlePath) {
     return dedent`
@@ -57,7 +46,7 @@ module.exports = ({
 
   return dedent`
     ${heading}
-    ${warnings.length ? `\n${warnings.join('\n\n')}\n` : ''}
+
     You can now run the app on ${device}\n
   `;
 };
